@@ -10,6 +10,10 @@
 		/// </summary>
 		public string ConnectionString { get; set; }
 
+		// todo add ExpiredItemsDeletionInterval like MSSQL version, make it optional?
+		// todo add DefaultSlidingExpiration like MSSQL version
+		public string CollectionName { get; set; }
+
 		MongoCacheOptions IOptions<MongoCacheOptions>.Value => this;
 	}
 }

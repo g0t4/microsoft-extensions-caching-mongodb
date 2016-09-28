@@ -8,7 +8,7 @@
 
 	public class MongoCache : IDistributedCache
 	{
-		private IMongoDatabase _Database;
+		private IMongoCollection<CacheEntry> _Collection;
 
 		public MongoCache(IOptions<MongoCacheOptions> optionsAccessor)
 		{
@@ -29,12 +29,14 @@
 			}
 
 			var client = new MongoClient(url);
-			_Database = client.GetDatabase(url.DatabaseName);
+			_Collection = client.GetDatabase(url.DatabaseName)
+				.GetCollection<CacheEntry>(optionsAccessor.Value.CollectionName);
+
 		}
 
 		public byte[] Get(string key)
 		{
-			throw new NotImplementedException();
+			
 		}
 
 		public Task<byte[]> GetAsync(string key)
