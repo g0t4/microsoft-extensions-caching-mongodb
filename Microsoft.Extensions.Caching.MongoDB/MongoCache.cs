@@ -3,14 +3,35 @@
 	using System;
 	using System.Threading.Tasks;
 	using Distributed;
+	using global::MongoDB.Driver;
 	using Options;
 
 	public class MongoCache : IDistributedCache
 	{
+		private IMongoDatabase _Database;
+
 		public MongoCache(IOptions<MongoCacheOptions> optionsAccessor)
 		{
-			
+			if (optionsAccessor == null)
+			{
+				throw new ArgumentNullException(nameof(optionsAccessor));
+			}
+
+			if (optionsAccessor.Value.ConnectionString == null)
+			{
+				throw new ArgumentException("ConnectionString is missing", nameof(optionsAccessor));
+			}
+
+			var url = new MongoUrl(optionsAccessor.Value.ConnectionString);
+			if (url.DatabaseName == null)
+			{
+				throw new ArgumentException("ConnectionString requires a database name", nameof(optionsAccessor));
+			}
+
+			var client = new MongoClient(url);
+			_Database = client.GetDatabase(url.DatabaseName);
 		}
+
 		public byte[] Get(string key)
 		{
 			throw new NotImplementedException();
