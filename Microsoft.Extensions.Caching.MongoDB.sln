@@ -5,6 +5,8 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Microsoft.Extensions.Caching.MongoDB", "Microsoft.Extensions.Caching.MongoDB\Microsoft.Extensions.Caching.MongoDB.xproj", "{BBBCD78B-E884-4B3A-A70D-47EB2DF298D8}"
 EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Tests", "Tests\Tests.xproj", "{BDFBFF17-9B75-40F0-B9B7-40369E39D145}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{BBBCD78B-E884-4B3A-A70D-47EB2DF298D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BBBCD78B-E884-4B3A-A70D-47EB2DF298D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BBBCD78B-E884-4B3A-A70D-47EB2DF298D8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BDFBFF17-9B75-40F0-B9B7-40369E39D145}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BDFBFF17-9B75-40F0-B9B7-40369E39D145}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BDFBFF17-9B75-40F0-B9B7-40369E39D145}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BDFBFF17-9B75-40F0-B9B7-40369E39D145}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
