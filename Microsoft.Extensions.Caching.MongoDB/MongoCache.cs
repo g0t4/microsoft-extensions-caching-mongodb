@@ -3,8 +3,14 @@
 	using System;
 	using System.Threading.Tasks;
 	using Distributed;
+	using Options;
+
 	public class MongoCache : IDistributedCache
 	{
+		public MongoCache(IOptions<MongoCacheOptions> optionsAccessor)
+		{
+			
+		}
 		public byte[] Get(string key)
 		{
 			throw new NotImplementedException();
