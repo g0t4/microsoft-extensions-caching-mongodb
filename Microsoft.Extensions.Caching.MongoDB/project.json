@@ -1,13 +1,50 @@
 ﻿{
-  "version": "1.0.0-*",
+  "version": "1.0.0-beta1-*",
+
+  "name": "Microsoft.Extensions.Caching.MongoDB",
+
+  "description":
+    "Distributed cache implementation of Microsoft.Extensions.Caching.Distributed.IDistributedCache using MongoDB.",
+
+  "authors": ["Wes Higbee"],
+
+  "buildOptions": {
+    "warningsAsErrors": true
+  },
+
+  "packOptions": {
+    "summary": "A MongoDB distributed cache implementation.",
+    "owners": ["Wes Higbee"],
+    "releaseNotes": "Initial release",
+
+    "tags": [
+      "aspnetcore",
+      "mongo",
+      "mongodb",
+      "cache",
+      "distributedcache"
+    ],
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/g0t4/microsoft-extensions-caching-mongodb"
+    },
+    "licenseUrl": "https://github.com/g0t4/microsoft-extensions-caching-mongodb/blob/master/LICENSE",
+    "projectUrl": "https://github.com/g0t4/microsoft-extensions-caching-mongodb"
+  },
 
   "dependencies": {
-    "NETStandard.Library": "1.6.0"
+    "MongoDB.Driver": "2.3.0",
+    "Microsoft.Extensions.Caching.Abstractions": "1.0.0-*",
+    "Microsoft.Extensions.Options": "1.0.0-*"
   },
 
   "frameworks": {
-    "netstandard1.6": {
-      "imports": "dnxcore50"
+    "net451": {},
+    "netstandard1.5": {
+      //"dependencies": {
+      //  "NETStandard.Library": "1.6.0"
+      //}
     }
   }
+
 }
