@@ -39,9 +39,10 @@
 			return entry?.Value;
 		}
 
-		public Task<byte[]> GetAsync(string key)
+		public async Task<byte[]> GetAsync(string key)
 		{
-			return Task.FromResult<byte[]>(null);
+			var entry = await _Collection.Find(e => e.Key == key).FirstOrDefaultAsync();
+			return entry?.Value;
 		}
 
 		public void Refresh(string key)
