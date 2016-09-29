@@ -8,7 +8,7 @@
 
 	public class MongoCache : IDistributedCache
 	{
-		private IMongoCollection<CacheEntry> _Collection;
+		private readonly IMongoCollection<CacheEntry> _Collection;
 
 		public MongoCache(IOptions<MongoCacheOptions> optionsAccessor)
 		{
@@ -35,7 +35,8 @@
 
 		public byte[] Get(string key)
 		{
-			return null;
+			var entry = _Collection.Find(e => e.Key == key).FirstOrDefault();
+			return entry?.Value;
 		}
 
 		public Task<byte[]> GetAsync(string key)
@@ -65,7 +66,12 @@
 
 		public void Set(string key, byte[] value, DistributedCacheEntryOptions options)
 		{
-			
+			var entry = new CacheEntry
+			{
+				Key = key,
+				Value = value
+			};
+			_Collection.InsertOne(entry);
 		}
 
 		public Task SetAsync(string key, byte[] value, DistributedCacheEntryOptions options)
