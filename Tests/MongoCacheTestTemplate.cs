@@ -124,9 +124,6 @@
 
 // todo Get needs to purge if expired
 // todo do I want some optional feature to purge the cache on a background thread like MSSQL? Items might otherwise expire and just accumulate, maybe some record count or time period for purging? configurable too
-// todo validate key not null on all methods, and value not null on set, in some of these we can ignore null key (like refresh and delete) - or maybe not, need to see if docs have expected behavior of API
-// todo options passed can have absolute time or absolute relative to now, parse both
-
 
 		protected abstract Task<string> Get(string key);
 		protected abstract Task Set(string key, string value);

@@ -45,6 +45,11 @@
 
 		public byte[] Get(string key)
 		{
+			if (key == null)
+			{
+				throw new ArgumentNullException(nameof(key));
+			}
+
 			var entry = _Collection.Find(e => e.Key == key).FirstOrDefault();
 			if (entry == null)
 			{
@@ -72,6 +77,11 @@
 
 		public async Task<byte[]> GetAsync(string key)
 		{
+			if (key == null)
+			{
+				throw new ArgumentNullException(nameof(key));
+			}
+
 			var entry = await _Collection.Find(e => e.Key == key).FirstOrDefaultAsync();
 			if (entry == null)
 			{
@@ -97,18 +107,39 @@
 
 		public void Remove(string key)
 		{
+			if (key == null)
+			{
+				throw new ArgumentNullException(nameof(key));
+			}
+
 			_Collection.DeleteOne(e => e.Key == key);
 			// todo confirm?
 		}
 
 		public Task RemoveAsync(string key)
 		{
+			if (key == null)
+			{
+				throw new ArgumentNullException(nameof(key));
+			}
+
 			return _Collection.DeleteOneAsync(e => e.Key == key);
 			// todo confirm?
 		}
 
 		public void Set(string key, byte[] value, DistributedCacheEntryOptions options)
 		{
+			if (key == null)
+			{
+				throw new ArgumentNullException(nameof(key));
+			}
+			if (value == null)
+			{
+				// todo call Remove?
+				throw new ArgumentNullException(nameof(key));
+			}
+			options = options ?? new DistributedCacheEntryOptions();
+
 			var entry = CacheEntry.Create(_Clock, key, value, options);
 			if (entry.IsExpired(_Clock))
 			{
@@ -120,6 +151,17 @@
 
 		public Task SetAsync(string key, byte[] value, DistributedCacheEntryOptions options)
 		{
+			if (key == null)
+			{
+				throw new ArgumentNullException(nameof(key));
+			}
+			if (value == null)
+			{
+				// todo call Remove?
+				throw new ArgumentNullException(nameof(key));
+			}
+			options = options ?? new DistributedCacheEntryOptions();
+
 			var entry = CacheEntry.Create(_Clock, key, value, options);
 			if (entry.IsExpired(_Clock))
 			{
