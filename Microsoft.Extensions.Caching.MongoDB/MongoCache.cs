@@ -52,16 +52,22 @@
 			}
 			if (entry.IsExpired(_Clock))
 			{
-				// todo remove
-				// Task.Run
+				TriggerCleanup(entry);
 				return null;
 			}
 			entry.Refresh(_Clock);
 			var updateLastAccesssed = Builders<CacheEntry>.Update
 				.Set(e => e.LastAccessedAt, entry.LastAccessedAt);
-			// todo should we do the update asynchronously?
+			// todo should we do the update asynchronously? 
+			// the Redis and MSSQL implementations both "block" for this before the value is available to callers, seems like missing the opportunity to boost cache performance
+			// though the MSSQL implementation only makes one roundtrip to the db to update and fetch the value, only redis has two calls
 			_Collection.UpdateOne(e => e.Key == entry.Key, updateLastAccesssed);
 			return entry.Value;
+		}
+
+		private void TriggerCleanup(CacheEntry entry)
+		{
+			// todo remove old entries
 		}
 
 		public async Task<byte[]> GetAsync(string key)
@@ -73,8 +79,7 @@
 			}
 			if (entry.IsExpired(_Clock))
 			{
-				// todo remove
-				// Task.Run
+				TriggerCleanup(entry);
 				return null;
 			}
 			entry.Refresh(_Clock);

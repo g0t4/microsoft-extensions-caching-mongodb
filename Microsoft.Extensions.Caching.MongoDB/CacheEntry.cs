@@ -48,6 +48,7 @@
 
 		public TimeSpan? SlidingDuration { get; set; }
 
+		// todo might make more sense to consolidate AbsoluteExpiration with this value so I can easily poll the collection and purge expired entries
 		public DateTimeOffset LastAccessedAt { get; set; }
 
 		public bool IsExpired(ISystemClock clock)

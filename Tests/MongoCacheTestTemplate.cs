@@ -120,11 +120,9 @@
 			Expect(await Get("key"), Is.Null, "Should not be accessible after Refresh outside window");
 		}
 
-// todo Set needs to validate expiration options - ignore if absolute < now 
-// todo set needs to set expiration
-// todo Get needs to check expiration
+		// todo separate tests of Get Refreshing
+
 // todo Get needs to purge if expired
-// todo refresh just needs to do a Get and ignore the value
 // todo do I want some optional feature to purge the cache on a background thread like MSSQL? Items might otherwise expire and just accumulate, maybe some record count or time period for purging? configurable too
 // todo validate key not null on all methods, and value not null on set, in some of these we can ignore null key (like refresh and delete) - or maybe not, need to see if docs have expected behavior of API
 // todo options passed can have absolute time or absolute relative to now, parse both
