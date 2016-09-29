@@ -73,7 +73,7 @@
 				Key = key,
 				Value = value
 			};
-			_Collection.InsertOne(entry);
+			_Collection.ReplaceOne(e => e.Key == key, entry, new UpdateOptions {IsUpsert = true});
 		}
 
 		public Task SetAsync(string key, byte[] value, DistributedCacheEntryOptions options)
@@ -83,7 +83,7 @@
 				Key = key,
 				Value = value
 			};
-			return _Collection.InsertOneAsync(entry);
+			return _Collection.ReplaceOneAsync(e => e.Key == key, entry, new UpdateOptions {IsUpsert = true});
 		}
 	}
 }
