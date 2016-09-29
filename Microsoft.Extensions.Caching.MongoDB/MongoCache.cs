@@ -31,17 +31,16 @@
 			var client = new MongoClient(url);
 			_Collection = client.GetDatabase(url.DatabaseName)
 				.GetCollection<CacheEntry>(optionsAccessor.Value.CollectionName);
-
 		}
 
 		public byte[] Get(string key)
 		{
-			
+			return null;
 		}
 
 		public Task<byte[]> GetAsync(string key)
 		{
-			throw new NotImplementedException();
+			return Task.FromResult<byte[]>(null);
 		}
 
 		public void Refresh(string key)
@@ -66,7 +65,7 @@
 
 		public void Set(string key, byte[] value, DistributedCacheEntryOptions options)
 		{
-			throw new NotImplementedException();
+			
 		}
 
 		public Task SetAsync(string key, byte[] value, DistributedCacheEntryOptions options)
