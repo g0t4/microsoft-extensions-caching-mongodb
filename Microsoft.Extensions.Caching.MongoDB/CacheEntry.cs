@@ -30,8 +30,18 @@
 
 		public bool IsExpired(ISystemClock clock)
 		{
-			return AbsolutionExpiration.HasValue 
-				&& AbsolutionExpiration <= clock.UtcNow;
+			if (AbsolutionExpiration.HasValue
+			    && AbsolutionExpiration <= clock.UtcNow)
+			{
+				return true;
+			}
+			if (SlidingExpiration.HasValue
+			    && LastAccessedAt.Add(SlidingExpiration.Value) <= clock.UtcNow)
+			{
+				return true;
+			}
+
+			return false;
 		}
 	}
 }
