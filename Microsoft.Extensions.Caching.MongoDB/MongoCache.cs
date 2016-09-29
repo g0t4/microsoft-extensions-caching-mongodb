@@ -8,21 +8,31 @@
 
 	public class MongoCache : IDistributedCache
 	{
+		private readonly ISystemClock _Clock;
 		private readonly IMongoCollection<CacheEntry> _Collection;
 
-		public MongoCache(IOptions<MongoCacheOptions> optionsAccessor)
+		// todo extension method to register services
+
+		public MongoCache(ISystemClock clock, IOptions<MongoCacheOptions> optionsAccessor)
 		{
+			if (clock == null)
+			{
+				throw new ArgumentNullException(nameof(clock));
+			}
+			_Clock = clock;
+
 			if (optionsAccessor == null)
 			{
 				throw new ArgumentNullException(nameof(optionsAccessor));
 			}
 
-			if (optionsAccessor.Value.ConnectionString == null)
+			var options = optionsAccessor.Value;
+			if (options.ConnectionString == null)
 			{
 				throw new ArgumentException("ConnectionString is missing", nameof(optionsAccessor));
 			}
 
-			var url = new MongoUrl(optionsAccessor.Value.ConnectionString);
+			var url = new MongoUrl(options.ConnectionString);
 			if (url.DatabaseName == null)
 			{
 				throw new ArgumentException("ConnectionString requires a database name", nameof(optionsAccessor));
@@ -30,7 +40,7 @@
 
 			var client = new MongoClient(url);
 			_Collection = client.GetDatabase(url.DatabaseName)
-				.GetCollection<CacheEntry>(optionsAccessor.Value.CollectionName);
+				.GetCollection<CacheEntry>(options.CollectionName);
 		}
 
 		public byte[] Get(string key)
@@ -72,8 +82,14 @@
 			var entry = new CacheEntry
 			{
 				Key = key,
-				Value = value
+				Value = value,
+				AbsolutionExpiration = options.AbsoluteExpiration
 			};
+			if (entry.IsExpired(_Clock))
+			{
+				return;
+			}
+
 			_Collection.ReplaceOne(e => e.Key == key, entry, new UpdateOptions {IsUpsert = true});
 		}
 
@@ -82,8 +98,13 @@
 			var entry = new CacheEntry
 			{
 				Key = key,
-				Value = value
+				Value = value,
+				AbsolutionExpiration = options.AbsoluteExpiration
 			};
+			if (entry.IsExpired(_Clock))
+			{
+				return Task.FromResult(0);
+			}
 			return _Collection.ReplaceOneAsync(e => e.Key == key, entry, new UpdateOptions {IsUpsert = true});
 		}
 	}

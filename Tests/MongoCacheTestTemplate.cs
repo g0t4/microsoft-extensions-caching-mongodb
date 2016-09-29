@@ -7,27 +7,24 @@
 	using NUnit.Framework;
 	using static NUnit.Framework.AssertionHelper;
 
-	public abstract class MongoCacheTestTemplate 
+	public abstract class MongoCacheTestTemplate
 	{
 		private const string TestConnectionString = "mongodb://localhost/caching-tests";
 		protected MongoCache Cache;
+		protected TestClock Clock;
 
 		[SetUp]
 		public void BeforeEachTest()
 		{
 			var client = new MongoClient();
 			client.DropDatabase(new MongoUrl(TestConnectionString).DatabaseName);
-			Cache = CreateMongoCache();
-		}
-
-		protected static MongoCache CreateMongoCache()
-		{
 			var options = new MongoCacheOptions
 			{
 				ConnectionString = TestConnectionString,
 				CollectionName = "cache"
 			};
-			return new MongoCache(options);
+			Clock = new TestClock();
+			Cache = new MongoCache(Clock, options);
 		}
 
 		[Test]
@@ -75,6 +72,16 @@
 			Expect(await Get("key"), Is.Null);
 		}
 
+		[Test]
+		public async Task Set_AlreadyExpired_Ignores()
+		{
+			var expiresNow = new DistributedCacheEntryOptions()
+				.SetAbsoluteExpiration(Clock.UtcNow);
+
+			await Set("key", "value", expiresNow);
+
+			Expect(await Get("key"), Is.Null);
+		}
 
 // todo Set needs to validate expiration options - ignore if absolute < now 
 // todo set needs to set expiration
@@ -88,7 +95,9 @@
 
 		protected abstract Task<string> Get(string key);
 		protected abstract Task Set(string key, string value);
+		protected abstract Task Set(string key, string value, DistributedCacheEntryOptions options);
 		protected abstract Task Remove(string key);
+		protected abstract Task Refresh(string key);
 	}
 
 	public class MongoCacheSynchronousTests : MongoCacheTestTemplate
@@ -99,8 +108,14 @@
 		protected override async Task Set(string key, string value)
 			=> Cache.SetString(key, value);
 
+		protected override async Task Set(string key, string value, DistributedCacheEntryOptions options)
+			=> Cache.SetString(key, value, options);
+
 		protected override async Task Remove(string key)
 			=> Cache.Remove(key);
+
+		protected override async Task Refresh(string key)
+			=> Cache.Refresh(key);
 	}
 
 
@@ -112,7 +127,13 @@
 		protected override Task Set(string key, string value)
 			=> Cache.SetStringAsync(key, value);
 
+		protected override Task Set(string key, string value, DistributedCacheEntryOptions options)
+			=> Cache.SetStringAsync(key, value, options);
+
 		protected override Task Remove(string key)
 			=> Cache.RemoveAsync(key);
+
+		protected override Task Refresh(string key)
+			=> Cache.RefreshAsync(key);
 	}
 }

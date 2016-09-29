@@ -27,5 +27,11 @@
 		public TimeSpan? SlidingExpiration { get; set; }
 
 		public DateTimeOffset LastAccessedAt { get; set; }
+
+		public bool IsExpired(ISystemClock clock)
+		{
+			return AbsolutionExpiration.HasValue 
+				&& AbsolutionExpiration <= clock.UtcNow;
+		}
 	}
 }
