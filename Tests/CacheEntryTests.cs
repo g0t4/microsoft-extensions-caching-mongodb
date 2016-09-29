@@ -1,6 +1,7 @@
 namespace Tests
 {
 	using System;
+	using Microsoft.Extensions.Caching.Distributed;
 	using Microsoft.Extensions.Caching.MongoDB;
 	using MongoDB.Bson;
 	using NUnit.Framework;
@@ -17,6 +18,50 @@ namespace Tests
 
 			Expect(serialized["_id"].AsString, Is.EqualTo("key"));
 		}
+
+		[Test]
+		public void Create_MapsKey_Value_AbsoluteExpiration_AndSlidingDuration()
+		{
+			var expiration = new DateTimeOffset(new DateTime(2016, 10, 1));
+			var window = TimeSpan.FromSeconds(2);
+			var options = new DistributedCacheEntryOptions()
+				.SetAbsoluteExpiration(expiration)
+				.SetSlidingExpiration(window);
+
+			var entry = CacheEntry.Create(new TestClock(), "key", new byte[1], options);
+
+			Expect(entry.Key, Is.EqualTo("key"));
+			Expect(entry.Value, Is.EqualTo(new byte[1]));
+			Expect(entry.AbsolutionExpiration, Is.EqualTo(expiration));
+			Expect(entry.SlidingExpiration, Is.EqualTo(window));
+		}
+
+		[Test]
+		public void Create_SetsLastAccessedAtToNow()
+		{
+			var options = new DistributedCacheEntryOptions();
+			var clock = new TestClock();
+
+			var entry = CacheEntry.Create(clock, "key", new byte[1], options);
+
+			Expect(entry.LastAccessedAt, Is.EqualTo(clock.UtcNow));
+		}
+
+
+		[Test]
+		public void Create_WithAbsoluteRelativeToNow_ComputesAbsoluteBasedOnNow()
+		{
+			var options = new DistributedCacheEntryOptions
+			{
+				AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(10)
+			};
+			var clock = new TestClock();
+
+			var entry = CacheEntry.Create(clock, "key", new byte[1], options);
+
+			Expect(entry.AbsolutionExpiration, Is.EqualTo(clock.UtcNow.AddSeconds(10)));
+		}
+
 
 		[Test]
 		public void IsExpired_NoExpiration_ReturnsFalse()

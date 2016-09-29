@@ -1,6 +1,7 @@
 ﻿namespace Microsoft.Extensions.Caching.MongoDB
 {
 	using System;
+	using Distributed;
 	using global::MongoDB.Bson.Serialization.Attributes;
 
 	/// <summary>
@@ -13,6 +14,27 @@
 	/// </summary>
 	public class CacheEntry
 	{
+		public static CacheEntry Create(ISystemClock clock, string key, byte[] value, DistributedCacheEntryOptions options)
+		{
+			var entry = new CacheEntry
+			{
+				Key = key,
+				Value = value,
+				SlidingExpiration = options.SlidingExpiration,
+				LastAccessedAt = clock.UtcNow
+			};
+			// note: no contract that I can find specifies precedence when both are set
+			if (options.AbsoluteExpiration.HasValue)
+			{
+				entry.AbsolutionExpiration = options.AbsoluteExpiration.Value;
+			}
+			if (options.AbsoluteExpirationRelativeToNow.HasValue)
+			{
+				entry.AbsolutionExpiration = entry.LastAccessedAt.Add(options.AbsoluteExpirationRelativeToNow.Value);
+			}
+			return entry;
+		}
+
 		/// <summary>
 		///     Document's _id = key, thus the key is the primary key in the DB
 		///     and has a unique index built by default

@@ -79,12 +79,7 @@
 
 		public void Set(string key, byte[] value, DistributedCacheEntryOptions options)
 		{
-			var entry = new CacheEntry
-			{
-				Key = key,
-				Value = value,
-				AbsolutionExpiration = options.AbsoluteExpiration
-			};
+			var entry = CacheEntry.Create(_Clock, key, value, options);
 			if (entry.IsExpired(_Clock))
 			{
 				return;
@@ -95,12 +90,7 @@
 
 		public Task SetAsync(string key, byte[] value, DistributedCacheEntryOptions options)
 		{
-			var entry = new CacheEntry
-			{
-				Key = key,
-				Value = value,
-				AbsolutionExpiration = options.AbsoluteExpiration
-			};
+			var entry = CacheEntry.Create(_Clock, key, value, options);
 			if (entry.IsExpired(_Clock))
 			{
 				return Task.FromResult(0);
