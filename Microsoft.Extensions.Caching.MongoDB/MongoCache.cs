@@ -46,37 +46,49 @@
 		public byte[] Get(string key)
 		{
 			var entry = _Collection.Find(e => e.Key == key).FirstOrDefault();
-			return GetCommon(entry);
-		}
-
-		private byte[] GetCommon(CacheEntry entry)
-		{
 			if (entry == null)
 			{
 				return null;
 			}
 			if (entry.IsExpired(_Clock))
 			{
+				// todo remove
+				// Task.Run
 				return null;
 			}
+			entry.Refresh(_Clock);
+			var updateLastAccesssed = Builders<CacheEntry>.Update
+				.Set(e => e.LastAccessedAt, entry.LastAccessedAt);
+			// todo should we do the update asynchronously?
+			_Collection.UpdateOne(e => e.Key == entry.Key, updateLastAccesssed);
 			return entry.Value;
 		}
 
 		public async Task<byte[]> GetAsync(string key)
 		{
 			var entry = await _Collection.Find(e => e.Key == key).FirstOrDefaultAsync();
-			return GetCommon(entry);
+			if (entry == null)
+			{
+				return null;
+			}
+			if (entry.IsExpired(_Clock))
+			{
+				// todo remove
+				// Task.Run
+				return null;
+			}
+			entry.Refresh(_Clock);
+			var updateLastAccesssed = Builders<CacheEntry>.Update
+				.Set(e => e.LastAccessedAt, entry.LastAccessedAt);
+			// todo option for asynchronous, don't need to update before getting value
+			// if I do that then the question is, with refresh do I need to apply the same logic? 
+			await _Collection.UpdateOneAsync(e => e.Key == entry.Key, updateLastAccesssed);
+			return entry.Value;
 		}
 
-		public void Refresh(string key)
-		{
-			throw new NotImplementedException();
-		}
+		public void Refresh(string key) => Get(key);
 
-		public Task RefreshAsync(string key)
-		{
-			throw new NotImplementedException();
-		}
+		public Task RefreshAsync(string key) => GetAsync(key);
 
 		public void Remove(string key)
 		{

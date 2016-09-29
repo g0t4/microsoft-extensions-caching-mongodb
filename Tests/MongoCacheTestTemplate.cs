@@ -98,6 +98,28 @@
 			Expect(await Get("key"), Is.Null);
 		}
 
+		[Test]
+		public async Task Refresh_ExtendsLifeWhenInsideWindow()
+		{
+			var slidingOptions = new DistributedCacheEntryOptions()
+				.SetSlidingExpiration(TimeSpan.FromSeconds(10));
+			await Set("key", "value", slidingOptions);
+
+			var withinWindow = TimeSpan.FromSeconds(5);
+			Clock.Advance(withinWindow);
+
+			await Refresh("key"); // should extend life to 15 seconds after creation
+
+			var withinSecondWindow = TimeSpan.FromSeconds(9);
+			Clock.Advance(withinSecondWindow); // 14 seconds after creating entry
+			Expect(await Get("key"), Is.EqualTo("value"), "Should be accessible within second window");
+
+			// Get also refreshes, so we need to jump 10 full seconds past a Get to be at end of window
+			Clock.Advance(TimeSpan.FromSeconds(20));
+			await Refresh("key"); // should not extend life
+			Expect(await Get("key"), Is.Null, "Should not be accessible after Refresh outside window");
+		}
+
 // todo Set needs to validate expiration options - ignore if absolute < now 
 // todo set needs to set expiration
 // todo Get needs to check expiration

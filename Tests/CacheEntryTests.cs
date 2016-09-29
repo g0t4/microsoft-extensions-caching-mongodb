@@ -33,7 +33,7 @@ namespace Tests
 			Expect(entry.Key, Is.EqualTo("key"));
 			Expect(entry.Value, Is.EqualTo(new byte[1]));
 			Expect(entry.AbsolutionExpiration, Is.EqualTo(expiration));
-			Expect(entry.SlidingExpiration, Is.EqualTo(window));
+			Expect(entry.SlidingDuration, Is.EqualTo(window));
 		}
 
 		[Test]
@@ -98,7 +98,7 @@ namespace Tests
 			var clock = new TestClock();
 			var entry = new CacheEntry
 			{
-				SlidingExpiration = TimeSpan.FromSeconds(10),
+				SlidingDuration = TimeSpan.FromSeconds(10),
 				LastAccessedAt = clock.UtcNow
 			};
 
@@ -124,7 +124,7 @@ namespace Tests
 			var absoluteExpirationWithinWindow = clock.UtcNow.AddSeconds(5);
 			var entry = new CacheEntry
 			{
-				SlidingExpiration = TimeSpan.FromSeconds(10),
+				SlidingDuration = TimeSpan.FromSeconds(10),
 				LastAccessedAt = clock.UtcNow,
 				AbsolutionExpiration = absoluteExpirationWithinWindow
 			};
@@ -143,7 +143,7 @@ namespace Tests
 			var absoluteExpirationAfterWindow = clock.UtcNow.AddSeconds(15);
 			var entry = new CacheEntry
 			{
-				SlidingExpiration = TimeSpan.FromSeconds(10),
+				SlidingDuration = TimeSpan.FromSeconds(10),
 				LastAccessedAt = clock.UtcNow,
 				AbsolutionExpiration = absoluteExpirationAfterWindow
 			};
@@ -153,6 +153,40 @@ namespace Tests
 			clock.Advance(TimeSpan.FromSeconds(10));
 
 			Expect(entry.IsExpired(clock), Is.True, "Should expire at end of window");
+		}
+
+		[Test]
+		public void Refresh_NoSlidingExpiration_AlwaysUpdatesLastAccessedAt()
+		{
+			DateTimeOffset now = new DateTime(2016, 10, 1);
+			var clock = new TestClock {UtcNow = now};
+			var entry = new CacheEntry();
+
+			entry.Refresh(clock);
+
+			Expect(entry.LastAccessedAt, Is.EqualTo(now));
+		}
+
+		[Test]
+		public void Refresh_WithSlidingExpiration_OnlyUpdatesWithinWindow()
+		{
+			DateTimeOffset now = new DateTime(2016, 10, 1);
+			var clock = new TestClock {UtcNow = now};
+			var entry = new CacheEntry
+			{
+				LastAccessedAt = clock.UtcNow,
+				SlidingDuration = TimeSpan.FromSeconds(10)
+			};
+
+			var withinWindow = TimeSpan.FromSeconds(1);
+			clock.Advance(withinWindow);
+			entry.Refresh(clock);
+			Expect(entry.LastAccessedAt, Is.EqualTo(now.AddSeconds(1)), "Should update within window.");
+
+			var toEndOfWindow = TimeSpan.FromSeconds(10);
+			clock.Advance(toEndOfWindow);
+			entry.Refresh(clock);
+			Expect(entry.LastAccessedAt, Is.EqualTo(now.AddSeconds(1)), "Should not update at end of window.");
 		}
 	}
 }

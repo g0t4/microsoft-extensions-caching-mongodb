@@ -20,7 +20,7 @@
 			{
 				Key = key,
 				Value = value,
-				SlidingExpiration = options.SlidingExpiration,
+				SlidingDuration = options.SlidingExpiration,
 				LastAccessedAt = clock.UtcNow
 			};
 			// note: no contract that I can find specifies precedence when both are set
@@ -46,7 +46,7 @@
 
 		public DateTimeOffset? AbsolutionExpiration { get; set; }
 
-		public TimeSpan? SlidingExpiration { get; set; }
+		public TimeSpan? SlidingDuration { get; set; }
 
 		public DateTimeOffset LastAccessedAt { get; set; }
 
@@ -57,13 +57,22 @@
 			{
 				return true;
 			}
-			if (SlidingExpiration.HasValue
-			    && LastAccessedAt.Add(SlidingExpiration.Value) <= clock.UtcNow)
+			if (SlidingDuration.HasValue
+			    && LastAccessedAt.Add(SlidingDuration.Value) <= clock.UtcNow)
 			{
 				return true;
 			}
 
 			return false;
+		}
+
+		public void Refresh(ISystemClock clock)
+		{
+			if (IsExpired(clock))
+			{
+				return;
+			}
+			LastAccessedAt = clock.UtcNow;
 		}
 	}
 }

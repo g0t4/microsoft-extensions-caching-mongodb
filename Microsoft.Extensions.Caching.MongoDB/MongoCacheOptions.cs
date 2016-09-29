@@ -15,6 +15,11 @@
 		// todo default collection name
 		public string CollectionName { get; set; }
 
+		/// <summary>
+		/// Whether or not a call to Get synchronously or asynchronously refreshes LastAccessedAt
+		/// </summary>
+		//public bool BlockForRefresh { get; set; }
+
 		MongoCacheOptions IOptions<MongoCacheOptions>.Value => this;
 	}
 }
