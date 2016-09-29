@@ -1,5 +1,6 @@
 ﻿namespace Tests
 {
+	using System;
 	using System.Threading.Tasks;
 	using Microsoft.Extensions.Caching.Distributed;
 	using Microsoft.Extensions.Caching.MongoDB;
@@ -55,6 +56,20 @@
 			Expect(await Get("key"), Is.EqualTo("replaced"));
 		}
 
+		[Test]
+		public async Task Get_ExpiringEntry_ReturnsItUntilExpired()
+		{
+			// note: more tests of expiration scenarios in CacheEntry type, just an integration test here
+
+			var options = new DistributedCacheEntryOptions()
+				.SetAbsoluteExpiration(Clock.UtcNow.AddSeconds(1));
+			await Set("key", "value", options);
+
+			Expect(await Get("key"), Is.EqualTo("value"), "Entry should be accessible before it expires");
+
+			Clock.Advance(TimeSpan.FromSeconds(1));
+			Expect(await Get("key"), Is.Null, "Entry should not be accessible if it expired");
+		}
 
 		[Test]
 		public async Task Remove_WithoutEntry_DoesNothing()

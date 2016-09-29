@@ -46,13 +46,26 @@
 		public byte[] Get(string key)
 		{
 			var entry = _Collection.Find(e => e.Key == key).FirstOrDefault();
-			return entry?.Value;
+			return GetCommon(entry);
+		}
+
+		private byte[] GetCommon(CacheEntry entry)
+		{
+			if (entry == null)
+			{
+				return null;
+			}
+			if (entry.IsExpired(_Clock))
+			{
+				return null;
+			}
+			return entry.Value;
 		}
 
 		public async Task<byte[]> GetAsync(string key)
 		{
 			var entry = await _Collection.Find(e => e.Key == key).FirstOrDefaultAsync();
-			return entry?.Value;
+			return GetCommon(entry);
 		}
 
 		public void Refresh(string key)
