@@ -56,7 +56,8 @@
 
 		public void Remove(string key)
 		{
-			throw new NotImplementedException();
+			_Collection.DeleteOne(e => e.Key == key);
+			// todo confirm?
 		}
 
 		public Task RemoveAsync(string key)

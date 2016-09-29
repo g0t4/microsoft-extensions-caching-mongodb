@@ -50,6 +50,23 @@
 			Expect(cache.GetString("key"), Is.EqualTo("value"));
 		}
 
-		
+		[Test]
+		public void Remove_WithoutEntry_DoesNothing()
+		{
+			var cache = CreateMongoCache();
+
+			cache.Remove("key");
+		}
+
+		[Test]
+		public void Remove_WithEntry_Removes()
+		{
+			var cache = CreateMongoCache();
+			cache.SetString("key", "value");
+
+			cache.Remove("key");
+
+			Expect(cache.GetString("key"), Is.Null);
+		}
 	}
 }
