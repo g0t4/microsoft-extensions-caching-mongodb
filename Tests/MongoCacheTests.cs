@@ -19,7 +19,7 @@
 		}
 
 		[Test]
-		public async Task Get_NoCachedValues_ReturnsNull()
+		public async Task GetAndGetAsync_NoCachedValues_ReturnsNull()
 		{
 			var cache = CreateMongoCache();
 
@@ -41,32 +41,38 @@
 		}
 
 		[Test]
-		public void Set_WithoutExpiration_StoresCacheEntry()
+		public async Task SetAndSetAsync_WithoutExpiration_StoresCacheEntry()
 		{
 			var cache = CreateMongoCache();
 
 			cache.SetString("key", "value");
+			await cache.SetStringAsync("keyAsync", "value");
 
 			Expect(cache.GetString("key"), Is.EqualTo("value"));
+			Expect(cache.GetString("keyAsync"), Is.EqualTo("value"));
 		}
 
 		[Test]
-		public void Remove_WithoutEntry_DoesNothing()
+		public async Task RemoveAndRemoveAsync_WithoutEntry_DoesNothing()
 		{
 			var cache = CreateMongoCache();
 
 			cache.Remove("key");
+			await cache.RemoveAsync("keyAsync");
 		}
 
 		[Test]
-		public void Remove_WithEntry_Removes()
+		public async Task RemoveAndRemoveAsync_WithEntry_Removes()
 		{
 			var cache = CreateMongoCache();
 			cache.SetString("key", "value");
+			cache.SetString("keyAsync", "value");
 
 			cache.Remove("key");
+			await cache.RemoveAsync("keyAsync");
 
 			Expect(cache.GetString("key"), Is.Null);
+			Expect(cache.GetString("keyAsync"), Is.Null);
 		}
 	}
 }

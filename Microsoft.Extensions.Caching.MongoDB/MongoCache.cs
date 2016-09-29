@@ -62,7 +62,8 @@
 
 		public Task RemoveAsync(string key)
 		{
-			throw new NotImplementedException();
+			return _Collection.DeleteOneAsync(e => e.Key == key);
+			// todo confirm?
 		}
 
 		public void Set(string key, byte[] value, DistributedCacheEntryOptions options)
@@ -77,7 +78,12 @@
 
 		public Task SetAsync(string key, byte[] value, DistributedCacheEntryOptions options)
 		{
-			throw new NotImplementedException();
+			var entry = new CacheEntry
+			{
+				Key = key,
+				Value = value
+			};
+			return _Collection.InsertOneAsync(entry);
 		}
 	}
 }
