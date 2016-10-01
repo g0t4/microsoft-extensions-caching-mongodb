@@ -12,8 +12,7 @@
 
 		// todo add ExpiredItemsDeletionInterval like MSSQL version, make it optional?
 		// todo add DefaultSlidingExpiration like MSSQL version
-		// todo default collection name
-		public string CollectionName { get; set; }
+		public string CollectionName { get; set; } = "cacheEntries";
 
 		/// <summary>
 		///     Whether or not a call to Get synchronously or asynchronously refreshes LastAccessedAt
