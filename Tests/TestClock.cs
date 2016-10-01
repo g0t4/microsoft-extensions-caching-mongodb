@@ -5,7 +5,7 @@
 
 	public class TestClock : ISystemClock
 	{
-		public DateTimeOffset UtcNow { get; set; } = new DateTime(2010, 1, 1);
+		public DateTime UtcNow { get; set; } = new DateTime(2010, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
 		public void Advance(TimeSpan timeSpan)
 		{

@@ -3,32 +3,11 @@
 	using System;
 	using System.Threading.Tasks;
 	using Microsoft.Extensions.Caching.Distributed;
-	using Microsoft.Extensions.Caching.MongoDB;
-	using MongoDB.Driver;
 	using NUnit.Framework;
 	using static NUnit.Framework.AssertionHelper;
 
-	public abstract class MongoCacheTestTemplate
+	public abstract class MongoCacheTestTemplate : IntegrationTestsBase
 	{
-		private const string TestConnectionString = "mongodb://localhost/caching-tests";
-		protected MongoCache Cache;
-		protected TestClock Clock;
-
-		[SetUp]
-		public void BeforeEachTest()
-		{
-			var client = new MongoClient();
-			client.DropDatabase(new MongoUrl(TestConnectionString).DatabaseName);
-			var options = new MongoCacheOptions
-			{
-				ConnectionString = TestConnectionString,
-				CollectionName = "cache",
-				WaitForRefreshOnGet = true
-			};
-			Clock = new TestClock();
-			Cache = new MongoCache(Clock, options);
-		}
-
 		[Test]
 		public async Task Get_NoCachedValues_ReturnsNull()
 		{
@@ -37,7 +16,6 @@
 			Expect(value, Is.Null, "Get");
 		}
 
-
 		[Test]
 		public async Task Set_WithoutExpiration_StoresCacheEntry()
 		{
@@ -45,7 +23,6 @@
 
 			Expect(await Get("key"), Is.EqualTo("value"));
 		}
-
 
 		[Test]
 		public async Task Set_ExistingKey_Replaces()
@@ -58,7 +35,7 @@
 		}
 
 		[Test]
-		public async Task Get_ExpiringEntry_ReturnsItUntilExpired()
+		public async Task Get_ExpiringEntry_ReturnsEntryUntilExpired()
 		{
 			// note: more tests of expiration scenarios in CacheEntry type, just an integration test here
 
@@ -168,7 +145,6 @@
 		protected override async Task Refresh(string key)
 			=> Cache.Refresh(key);
 	}
-
 
 	public class MongoCacheAsynchronousTests : MongoCacheTestTemplate
 	{

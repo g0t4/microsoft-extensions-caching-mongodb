@@ -27,22 +27,8 @@
 				throw new ArgumentNullException(nameof(optionsAccessor));
 			}
 
-			var options = optionsAccessor.Value;
-			if (options.ConnectionString == null)
-			{
-				throw new ArgumentException("ConnectionString is missing", nameof(optionsAccessor));
-			}
-
-			var url = new MongoUrl(options.ConnectionString);
-			if (url.DatabaseName == null)
-			{
-				throw new ArgumentException("ConnectionString requires a database name", nameof(optionsAccessor));
-			}
-
-			var client = new MongoClient(url);
-			_Collection = client.GetDatabase(url.DatabaseName)
-				.GetCollection<CacheEntry>(options.CollectionName);
-			_Options = options;
+			_Options = optionsAccessor.Value;
+			_Collection = _Options.GetCacheEntryCollection();
 		}
 
 		public byte[] Get(string key)
@@ -81,15 +67,15 @@
 				return null;
 			}
 			entry.Refresh(_Clock);
-			var updateLastAccesssed = Builders<CacheEntry>.Update
-				.Set(e => e.LastAccessedAt, entry.LastAccessedAt);
+			var refresh = Builders<CacheEntry>.Update
+				.Set(e => e.RefreshBefore, entry.RefreshBefore);
 			if (waitForRefresh)
 			{
-				_Collection.UpdateOne(e => e.Key == key, updateLastAccesssed);
+				_Collection.UpdateOne(e => e.Key == key, refresh);
 			}
 			else
 			{
-				_Collection.UpdateOneAsync(e => e.Key == key, updateLastAccesssed);
+				_Collection.UpdateOneAsync(e => e.Key == key, refresh);
 			}
 			return entry.Value;
 		}
@@ -122,16 +108,16 @@
 				return null;
 			}
 			entry.Refresh(_Clock);
-			var updateLastAccesssed = Builders<CacheEntry>.Update
-				.Set(e => e.LastAccessedAt, entry.LastAccessedAt);
+			var refresh = Builders<CacheEntry>.Update
+				.Set(e => e.RefreshBefore, entry.RefreshBefore);
 			if (waitForRefresh)
 			{
-				await _Collection.UpdateOneAsync(e => e.Key == entry.Key, updateLastAccesssed);
+				await _Collection.UpdateOneAsync(e => e.Key == entry.Key, refresh);
 			}
 			else
 			{
 #pragma warning disable 4014
-				_Collection.UpdateOneAsync(e => e.Key == entry.Key, updateLastAccesssed);
+				_Collection.UpdateOneAsync(e => e.Key == entry.Key, refresh);
 #pragma warning restore 4014
 			}
 			return entry.Value;

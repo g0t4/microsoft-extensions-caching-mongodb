@@ -16,21 +16,26 @@
 	{
 		public static CacheEntry Create(ISystemClock clock, string key, byte[] value, DistributedCacheEntryOptions options)
 		{
+			var now = clock.UtcNow;
+			var slidingDuration = options.SlidingExpiration;
 			var entry = new CacheEntry
 			{
 				Key = key,
 				Value = value,
-				SlidingDuration = options.SlidingExpiration,
-				LastAccessedAt = clock.UtcNow
+				SlidingDuration = slidingDuration
 			};
+			if (slidingDuration.HasValue)
+			{
+				entry.RefreshBefore = now.Add(slidingDuration.Value);
+			}
 			// note: no contract that I can find specifies precedence when both are set
 			if (options.AbsoluteExpiration.HasValue)
 			{
-				entry.AbsolutionExpiration = options.AbsoluteExpiration.Value;
+				entry.ExpiresAt = options.AbsoluteExpiration.Value.UtcDateTime;
 			}
 			if (options.AbsoluteExpirationRelativeToNow.HasValue)
 			{
-				entry.AbsolutionExpiration = entry.LastAccessedAt.Add(options.AbsoluteExpirationRelativeToNow.Value);
+				entry.ExpiresAt = now.Add(options.AbsoluteExpirationRelativeToNow.Value);
 			}
 			return entry;
 		}
@@ -44,22 +49,21 @@
 
 		public byte[] Value { get; set; }
 
-		public DateTimeOffset? AbsolutionExpiration { get; set; }
+		public DateTime? ExpiresAt { get; set; }
 
 		public TimeSpan? SlidingDuration { get; set; }
 
-		// todo might make more sense to consolidate AbsoluteExpiration with this value so I can easily poll the collection and purge expired entries
-		public DateTimeOffset LastAccessedAt { get; set; }
+		public DateTime? RefreshBefore { get; set; }
 
 		public bool IsExpired(ISystemClock clock)
 		{
-			if (AbsolutionExpiration.HasValue
-			    && AbsolutionExpiration <= clock.UtcNow)
+			if (ExpiresAt.HasValue
+			    && ExpiresAt <= clock.UtcNow)
 			{
 				return true;
 			}
-			if (SlidingDuration.HasValue
-			    && LastAccessedAt.Add(SlidingDuration.Value) <= clock.UtcNow)
+			if (RefreshBefore.HasValue
+			    && RefreshBefore <= clock.UtcNow)
 			{
 				return true;
 			}
@@ -69,11 +73,13 @@
 
 		public void Refresh(ISystemClock clock)
 		{
-			if (IsExpired(clock))
+			if (IsExpired(clock)
+			    || !SlidingDuration.HasValue)
 			{
 				return;
 			}
-			LastAccessedAt = clock.UtcNow;
+
+			RefreshBefore = clock.UtcNow.Add(SlidingDuration.Value);
 		}
 	}
 }

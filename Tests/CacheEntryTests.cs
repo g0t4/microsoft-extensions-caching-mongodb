@@ -22,7 +22,7 @@ namespace Tests
 		[Test]
 		public void Create_MapsKey_Value_AbsoluteExpiration_AndSlidingDuration()
 		{
-			var expiration = new DateTimeOffset(new DateTime(2016, 10, 1));
+			var expiration = new DateTime(2016, 10, 1, 0, 0, 0, DateTimeKind.Utc);
 			var window = TimeSpan.FromSeconds(2);
 			var options = new DistributedCacheEntryOptions()
 				.SetAbsoluteExpiration(expiration)
@@ -32,21 +32,32 @@ namespace Tests
 
 			Expect(entry.Key, Is.EqualTo("key"));
 			Expect(entry.Value, Is.EqualTo(new byte[1]));
-			Expect(entry.AbsolutionExpiration, Is.EqualTo(expiration));
+			Expect(entry.ExpiresAt, Is.EqualTo(expiration));
 			Expect(entry.SlidingDuration, Is.EqualTo(window));
 		}
 
 		[Test]
-		public void Create_SetsLastAccessedAtToNow()
+		public void Create_WithSlidingExpiration_SetsRefreshBefore()
+		{
+			var options = new DistributedCacheEntryOptions()
+				.SetSlidingExpiration(TimeSpan.FromSeconds(10));
+			var clock = new TestClock();
+
+			var entry = CacheEntry.Create(clock, "key", new byte[1], options);
+
+			Expect(entry.RefreshBefore, Is.EqualTo(clock.UtcNow.AddSeconds(10)));
+		}
+
+		[Test]
+		public void Create_WithoutSlidingExpiration_DoesNotSetRefreshBefore()
 		{
 			var options = new DistributedCacheEntryOptions();
 			var clock = new TestClock();
 
 			var entry = CacheEntry.Create(clock, "key", new byte[1], options);
 
-			Expect(entry.LastAccessedAt, Is.EqualTo(clock.UtcNow));
+			Expect(entry.RefreshBefore, Is.Null);
 		}
-
 
 		[Test]
 		public void Create_WithAbsoluteRelativeToNow_ComputesAbsoluteBasedOnNow()
@@ -59,7 +70,7 @@ namespace Tests
 
 			var entry = CacheEntry.Create(clock, "key", new byte[1], options);
 
-			Expect(entry.AbsolutionExpiration, Is.EqualTo(clock.UtcNow.AddSeconds(10)));
+			Expect(entry.ExpiresAt, Is.EqualTo(clock.UtcNow.AddSeconds(10)));
 		}
 
 
@@ -78,7 +89,7 @@ namespace Tests
 			var clock = new TestClock();
 			var entry = new CacheEntry
 			{
-				AbsolutionExpiration = clock.UtcNow.AddSeconds(10)
+				ExpiresAt = clock.UtcNow.AddSeconds(10)
 			};
 
 			Expect(entry.IsExpired(clock), Is.False, "Absolute should not be expired before the expiration time");
@@ -96,11 +107,7 @@ namespace Tests
 		public void IsExpired_SlidingOnly_ExpiresWhenWindowEnds()
 		{
 			var clock = new TestClock();
-			var entry = new CacheEntry
-			{
-				SlidingDuration = TimeSpan.FromSeconds(10),
-				LastAccessedAt = clock.UtcNow
-			};
+			var entry = Sliding10SecondEntry(clock);
 
 			Expect(entry.IsExpired(clock), Is.False, "Sliding should not immediately expire");
 
@@ -117,17 +124,20 @@ namespace Tests
 			Expect(entry.IsExpired(clock), Is.True, "Sliding should expire after the window");
 		}
 
+		private static CacheEntry Sliding10SecondEntry(ISystemClock clock) =>
+			new CacheEntry
+			{
+				SlidingDuration = TimeSpan.FromSeconds(10),
+				RefreshBefore = clock.UtcNow.Add(TimeSpan.FromSeconds(10))
+			};
+
 		[Test]
 		public void IsExpired_SlideUntilTimeIsBeforeWindowEnds_ExpiresAtAbsoluteExpirationTime()
 		{
 			var clock = new TestClock();
 			var absoluteExpirationWithinWindow = clock.UtcNow.AddSeconds(5);
-			var entry = new CacheEntry
-			{
-				SlidingDuration = TimeSpan.FromSeconds(10),
-				LastAccessedAt = clock.UtcNow,
-				AbsolutionExpiration = absoluteExpirationWithinWindow
-			};
+			var entry = Sliding10SecondEntry(clock);
+			entry.ExpiresAt = absoluteExpirationWithinWindow;
 
 			Expect(entry.IsExpired(clock), Is.False, "Does not immediately expire");
 
@@ -141,12 +151,8 @@ namespace Tests
 		{
 			var clock = new TestClock();
 			var absoluteExpirationAfterWindow = clock.UtcNow.AddSeconds(15);
-			var entry = new CacheEntry
-			{
-				SlidingDuration = TimeSpan.FromSeconds(10),
-				LastAccessedAt = clock.UtcNow,
-				AbsolutionExpiration = absoluteExpirationAfterWindow
-			};
+			var entry = Sliding10SecondEntry(clock);
+			entry.ExpiresAt = absoluteExpirationAfterWindow;
 
 			Expect(entry.IsExpired(clock), Is.False, "Does not immediately expire");
 
@@ -156,37 +162,32 @@ namespace Tests
 		}
 
 		[Test]
-		public void Refresh_NoSlidingExpiration_AlwaysUpdatesLastAccessedAt()
+		public void Refresh_NoSlidingExpiration_DoesNotSetRefreshBefore()
 		{
-			DateTimeOffset now = new DateTime(2016, 10, 1);
-			var clock = new TestClock {UtcNow = now};
+			var clock = new TestClock();
 			var entry = new CacheEntry();
 
 			entry.Refresh(clock);
 
-			Expect(entry.LastAccessedAt, Is.EqualTo(now));
+			Expect(entry.RefreshBefore, Is.Null);
 		}
 
 		[Test]
-		public void Refresh_WithSlidingExpiration_OnlyUpdatesWithinWindow()
+		public void Refresh_WithSlidingExpiration_OnlyRefreshesWithinWindow()
 		{
-			DateTimeOffset now = new DateTime(2016, 10, 1);
+			var now = new DateTime(2016, 10, 1, 0, 0, 0, DateTimeKind.Utc);
 			var clock = new TestClock {UtcNow = now};
-			var entry = new CacheEntry
-			{
-				LastAccessedAt = clock.UtcNow,
-				SlidingDuration = TimeSpan.FromSeconds(10)
-			};
+			var entry = Sliding10SecondEntry(clock);
 
 			var withinWindow = TimeSpan.FromSeconds(1);
 			clock.Advance(withinWindow);
 			entry.Refresh(clock);
-			Expect(entry.LastAccessedAt, Is.EqualTo(now.AddSeconds(1)), "Should update within window.");
+			Expect(entry.RefreshBefore, Is.EqualTo(now.AddSeconds(11)), "Should refresh within window.");
 
 			var toEndOfWindow = TimeSpan.FromSeconds(10);
 			clock.Advance(toEndOfWindow);
 			entry.Refresh(clock);
-			Expect(entry.LastAccessedAt, Is.EqualTo(now.AddSeconds(1)), "Should not update at end of window.");
+			Expect(entry.RefreshBefore, Is.EqualTo(now.AddSeconds(11)), "Should not refresh at end of window.");
 		}
 	}
 }

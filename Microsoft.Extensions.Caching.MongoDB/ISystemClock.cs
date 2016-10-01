@@ -7,11 +7,11 @@
 		/// <summary>
 		///     Retrieves the current system time in UTC.
 		/// </summary>
-		DateTimeOffset UtcNow { get; }
+		DateTime UtcNow { get; }
 	}
 
 	public class SystemClock : ISystemClock
 	{
-		public DateTimeOffset UtcNow => DateTime.UtcNow;
+		public DateTime UtcNow => DateTime.UtcNow;
 	}
 }
