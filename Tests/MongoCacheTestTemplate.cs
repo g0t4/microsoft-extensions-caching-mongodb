@@ -22,7 +22,8 @@
 			var options = new MongoCacheOptions
 			{
 				ConnectionString = TestConnectionString,
-				CollectionName = "cache"
+				CollectionName = "cache",
+				WaitForRefreshOnGet = true
 			};
 			Clock = new TestClock();
 			Cache = new MongoCache(Clock, options);

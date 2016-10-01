@@ -16,9 +16,9 @@
 		public string CollectionName { get; set; }
 
 		/// <summary>
-		/// Whether or not a call to Get synchronously or asynchronously refreshes LastAccessedAt
+		///     Whether or not a call to Get synchronously or asynchronously refreshes LastAccessedAt
 		/// </summary>
-		//public bool BlockForRefresh { get; set; }
+		public bool WaitForRefreshOnGet { get; set; }
 
 		MongoCacheOptions IOptions<MongoCacheOptions>.Value => this;
 	}

@@ -10,8 +10,9 @@
 	{
 		private readonly ISystemClock _Clock;
 		private readonly IMongoCollection<CacheEntry> _Collection;
+		private readonly MongoCacheOptions _Options;
 
-		// todo extension method to register services
+		// todo extension method to register services, should validate config?
 
 		public MongoCache(ISystemClock clock, IOptions<MongoCacheOptions> optionsAccessor)
 		{
@@ -41,9 +42,28 @@
 			var client = new MongoClient(url);
 			_Collection = client.GetDatabase(url.DatabaseName)
 				.GetCollection<CacheEntry>(options.CollectionName);
+			_Options = options;
 		}
 
 		public byte[] Get(string key)
+		{
+			return GetAndRefresh(key, _Options.WaitForRefreshOnGet);
+		}
+
+		/// <summary>
+		///     note as ugly as it is, we need separate implementations of Sync & Async
+		///     if we wrap either way async over sync, or sync over async, we take away decisions from consumers
+		///     and take away flexibility
+		///     MongoDB has separate APIs for sync & async so we're exposing that via these different implementations
+		///     tests are parameterized so not a big deal, just need twice the impl
+		/// </summary>
+		/// <param name="key"></param>
+		/// <param name="waitForRefresh">
+		///     If false, refresh is fire and forget. If true, the value isn't returned until refresh
+		///     completes
+		/// </param>
+		/// <returns></returns>
+		private byte[] GetAndRefresh(string key, bool waitForRefresh)
 		{
 			if (key == null)
 			{
@@ -63,10 +83,14 @@
 			entry.Refresh(_Clock);
 			var updateLastAccesssed = Builders<CacheEntry>.Update
 				.Set(e => e.LastAccessedAt, entry.LastAccessedAt);
-			// todo should we do the update asynchronously? 
-			// the Redis and MSSQL implementations both "block" for this before the value is available to callers, seems like missing the opportunity to boost cache performance
-			// though the MSSQL implementation only makes one roundtrip to the db to update and fetch the value, only redis has two calls
-			_Collection.UpdateOne(e => e.Key == entry.Key, updateLastAccesssed);
+			if (waitForRefresh)
+			{
+				_Collection.UpdateOne(e => e.Key == key, updateLastAccesssed);
+			}
+			else
+			{
+				_Collection.UpdateOneAsync(e => e.Key == key, updateLastAccesssed);
+			}
 			return entry.Value;
 		}
 
@@ -76,6 +100,11 @@
 		}
 
 		public async Task<byte[]> GetAsync(string key)
+		{
+			return await GetAndRefreshAsync(key, _Options.WaitForRefreshOnGet);
+		}
+
+		private async Task<byte[]> GetAndRefreshAsync(string key, bool waitForRefresh)
 		{
 			if (key == null)
 			{
@@ -95,15 +124,31 @@
 			entry.Refresh(_Clock);
 			var updateLastAccesssed = Builders<CacheEntry>.Update
 				.Set(e => e.LastAccessedAt, entry.LastAccessedAt);
-			// todo option for asynchronous, don't need to update before getting value
-			// if I do that then the question is, with refresh do I need to apply the same logic? 
-			await _Collection.UpdateOneAsync(e => e.Key == entry.Key, updateLastAccesssed);
+			if (waitForRefresh)
+			{
+				await _Collection.UpdateOneAsync(e => e.Key == entry.Key, updateLastAccesssed);
+			}
+			else
+			{
+#pragma warning disable 4014
+				_Collection.UpdateOneAsync(e => e.Key == entry.Key, updateLastAccesssed);
+#pragma warning restore 4014
+			}
 			return entry.Value;
 		}
 
-		public void Refresh(string key) => Get(key);
+		/// <summary>
+		///     Referesh always waits for save to DB, use this if you want to be sure that the update on a refresh is persisted.
+		/// </summary>
+		/// <param name="key"></param>
+		public void Refresh(string key) => GetAndRefresh(key, waitForRefresh: true);
 
-		public Task RefreshAsync(string key) => GetAsync(key);
+		/// <summary>
+		///     Refresh always awaits the save to DB, use this if you want to be sure that the update on a refresh is persisted.
+		/// </summary>
+		/// <param name="key"></param>
+		/// <returns></returns>
+		public Task RefreshAsync(string key) => GetAndRefreshAsync(key, waitForRefresh: true);
 
 		public void Remove(string key)
 		{
