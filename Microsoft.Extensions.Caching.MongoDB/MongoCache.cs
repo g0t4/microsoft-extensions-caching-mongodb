@@ -158,7 +158,6 @@
 			}
 
 			_Collection.DeleteOne(e => e.Key == key);
-			// todo confirm?
 		}
 
 		public Task RemoveAsync(string key)
@@ -168,8 +167,10 @@
 				throw new ArgumentNullException(nameof(key));
 			}
 
+			// we could check delete result, but what should we do with it? 
+			// let's say we call remove and no items match, is that really a problem, not IMO.
+			// net result is the same, the item is gone.
 			return _Collection.DeleteOneAsync(e => e.Key == key);
-			// todo confirm?
 		}
 
 		public void Set(string key, byte[] value, DistributedCacheEntryOptions options)
@@ -180,7 +181,7 @@
 			}
 			if (value == null)
 			{
-				// todo call Remove?
+				// todo low - call Remove?
 				throw new ArgumentNullException(nameof(key));
 			}
 			options = options ?? new DistributedCacheEntryOptions();
@@ -202,7 +203,7 @@
 			}
 			if (value == null)
 			{
-				// todo call Remove?
+				// todo low - call Remove?
 				throw new ArgumentNullException(nameof(key));
 			}
 			options = options ?? new DistributedCacheEntryOptions();

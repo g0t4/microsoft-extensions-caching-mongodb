@@ -115,13 +115,31 @@
 			Clock.Advance(withinSecondWindow); // 14 seconds after creating entry
 			Expect(await Get("key"), Is.EqualTo("value"), "Should be accessible within second window");
 
-			// Get also refreshes, so we need to jump 10 full seconds past a Get to be at end of window
+			// Get also refreshes, so we need to jump at least 10 full seconds past a Get to be at end of window
 			Clock.Advance(TimeSpan.FromSeconds(20));
 			await Refresh("key"); // should not extend life
 			Expect(await Get("key"), Is.Null, "Should not be accessible after Refresh outside window");
 		}
 
-		// todo separate tests of Get Refreshing
+		[Test]
+		public async Task Get_ExtendsLifeWhenInsideWindow()
+		{
+			var slidingOptions = new DistributedCacheEntryOptions()
+				.SetSlidingExpiration(TimeSpan.FromSeconds(10));
+			await Set("key", "value", slidingOptions);
+
+			var withinWindow = TimeSpan.FromSeconds(5);
+			Clock.Advance(withinWindow);
+
+			await Get("key"); // should extend life to 15 seconds after creation
+
+			var withinSecondWindow = TimeSpan.FromSeconds(9);
+			Clock.Advance(withinSecondWindow); // 14 seconds after creating entry
+			Expect(await Get("key"), Is.EqualTo("value"), "Should be accessible within second window");
+
+			Clock.Advance(TimeSpan.FromSeconds(20));
+			Expect(await Get("key"), Is.Null, "Should not be accessible after window");
+		}
 
 // todo Get needs to purge if expired
 // todo do I want some optional feature to purge the cache on a background thread like MSSQL? Items might otherwise expire and just accumulate, maybe some record count or time period for purging? configurable too
