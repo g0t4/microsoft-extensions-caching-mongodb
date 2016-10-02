@@ -118,9 +118,6 @@
 			Expect(await Get("key"), Is.Null, "Should not be accessible after window");
 		}
 
-// todo Get needs to purge if expired
-// todo do I want some optional feature to purge the cache on a background thread like MSSQL? Items might otherwise expire and just accumulate, maybe some record count or time period for purging? configurable too
-
 		protected abstract Task<string> Get(string key);
 		protected abstract Task Set(string key, string value);
 		protected abstract Task Set(string key, string value, DistributedCacheEntryOptions options);
